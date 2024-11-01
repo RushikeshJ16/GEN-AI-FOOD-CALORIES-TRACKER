@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Gen AI</title>
+
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        height: 100vh;
+      }
+
+      h1 {
+        margin: 20px;
+      }
+
+      input[type="file"] {
+        margin: 20px;
+      }
+
+      #output {
+        padding: 20px;
+      }
+      button {
+        border: solid;
+        border-radius: 20px;
+        height: 40px;
+        width: 100px;
+        background-color: white;
+      }
+      button:hover {
+        background-color: black;
+        color: white;
+        border: solid;
+      }
+    </style>
+
+    <script type="importmap">
+      {
+        "imports": {
+          "@google/generative-ai": "https://esm.run/@google/generative-ai"
+        }
+      }
+    </script>
+
+    <script type="module">
+      import { GoogleGenerativeAI } from "@google/generative-ai";
+
+      // your API_KEY
+      const API_KEY = "AIzaSyAN4nV9lWVY2FbyoCzUmtTnLD-gp_VpJIs";
+
+      // access your API key
+      const genAI = new GoogleGenerativeAI(API_KEY);
+
+      // For text-only input, use the gemini-pro model
+      const model = genAI.getGenerativeModel({ model: "gemini-pro-vision" });
+
+      // ...
+      // Converts a File object to a GoogleGenerativeAI.Part object.
+      async function fileToGenerativePart(file) {
+        const base64EncodedDataPromise = new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result.split(",")[1]);
+          reader.readAsDataURL(file);
+        });
+
+        return {
+          inlineData: {
+            data: await base64EncodedDataPromise,
+            mimeType: file.type,
+          },
+        };
+      }
+
+      document
+        .getElementById("submitButton")
+        .addEventListener("click", async () => {
+          const prompt =
+            "estimate serving size and tell me calories in this food picture , also give a bullet list of other nutritional information, if unable to identify picture reply with this image isnt a food pic ";
+
+          const fileInputEl = document.getElementById("fileInput");
+          const imageParts = await Promise.all(
+            [...fileInputEl.files].map(fileToGenerativePart)
+          );
+
+          const result = await model.generateContent([prompt, ...imageParts]);
+          const response = await result.response;
+          const text = await response.text();
+          document.getElementById("output").innerText = text;
+        });
+    </script>
+  </head>
+  <body>
+    <h1>Food Calories Tracker</h1>
+    <input type="file" id="fileInput" multiple />
+    <button id="submitButton">Submit</button>
+
+    <div id="output"></div>
+  </body>
+</html>
